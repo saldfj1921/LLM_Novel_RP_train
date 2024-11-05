@@ -1,0 +1,272 @@
+{
+    "token_num": 33901497054,
+    "token_ratio": "100.0%",
+    "sample_weight_rel": 1.0,
+    "sub_class": {
+        "CN_general": {
+            "token_num": 2800065723,
+            "token_ratio": "8.26%",
+            "sample_weight_rel": 1.0,
+            "sub_class": {
+                "Skypile": {
+                    "token_num": 2000017865,
+                    "token_ratio": "5.9%",
+                    "sample_weight_rel": 1.0,
+                    "sub_class": {
+                        "general": {
+                            "token_num": 2000017865,
+                            "token_ratio": "5.9%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.08333333333333333,
+                            "require_token_num": 250005476.91666666,
+                            "sample_keep_rate": 0.12500162188134586
+                        }
+                    },
+                    "sample_target_ratio": 0.08333333333333333,
+                    "require_token_num": 250005476.91666666,
+                    "sample_keep_rate": 0.12500162188134586
+                },
+                "Tiger": {
+                    "token_num": 800047858,
+                    "token_ratio": "2.36%",
+                    "sample_weight_rel": 1.0,
+                    "sub_class": {
+                        "zh-books": {
+                            "token_num": 400045608,
+                            "token_ratio": "1.18%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.041666666666666664,
+                            "require_token_num": 125002738.45833333,
+                            "sample_keep_rate": 0.3124712181775367
+                        },
+                        "zh-news": {
+                            "token_num": 400002250,
+                            "token_ratio": "1.18%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.041666666666666664,
+                            "require_token_num": 125002738.45833333,
+                            "sample_keep_rate": 0.31250508830471163
+                        }
+                    },
+                    "sample_target_ratio": 0.08333333333333333,
+                    "require_token_num": 250005476.91666666,
+                    "sample_keep_rate": 0.312488152323341
+                }
+            },
+            "sample_target_ratio": 0.16666666666666666,
+            "require_token_num": 500010953.8333333,
+            "sample_keep_rate": 0.17857114914346361
+        },
+        "code": {
+            "token_num": 5000444945,
+            "token_ratio": "14.75%",
+            "sample_weight_rel": 1.0,
+            "sub_class": {
+                "startcoder": {
+                    "token_num": 5000444945,
+                    "token_ratio": "14.75%",
+                    "sample_weight_rel": 1.0,
+                    "sub_class": {
+                        "cpp": {
+                            "token_num": 1400155103,
+                            "token_ratio": "4.13%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.05555555555555555,
+                            "require_token_num": 166670317.94444442,
+                            "sample_keep_rate": 0.11903703924467604
+                        },
+                        "java": {
+                            "token_num": 1200070855,
+                            "token_ratio": "3.54%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.05555555555555555,
+                            "require_token_num": 166670317.94444442,
+                            "sample_keep_rate": 0.13888373111473024
+                        },
+                        "python": {
+                            "token_num": 2400218987,
+                            "token_ratio": "7.08%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.05555555555555555,
+                            "require_token_num": 166670317.94444442,
+                            "sample_keep_rate": 0.06943962982009542
+                        }
+                    },
+                    "sample_target_ratio": 0.16666666666666666,
+                    "require_token_num": 500010953.8333333,
+                    "sample_keep_rate": 0.09999329246356363
+                }
+            },
+            "sample_target_ratio": 0.16666666666666666,
+            "require_token_num": 500010953.8333333,
+            "sample_keep_rate": 0.09999329246356363
+        },
+        "ENG_general": {
+            "token_num": 6000145874,
+            "token_ratio": "17.7%",
+            "sample_weight_rel": 2.0,
+            "sub_class": {
+                "WanJuan2": {
+                    "token_num": 6000145874,
+                    "token_ratio": "17.7%",
+                    "sample_weight_rel": 1.0,
+                    "sub_class": {
+                        "default": {
+                            "token_num": 6000145874,
+                            "token_ratio": "17.7%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.3333333333333333,
+                            "require_token_num": 1000021907.6666666,
+                            "sample_keep_rate": 0.16666626589863248
+                        }
+                    },
+                    "sample_target_ratio": 0.3333333333333333,
+                    "require_token_num": 1000021907.6666666,
+                    "sample_keep_rate": 0.16666626589863248
+                }
+            },
+            "sample_target_ratio": 0.3333333333333333,
+            "require_token_num": 1000021907.6666666,
+            "sample_keep_rate": 0.16666626589863248
+        },
+        "math": {
+            "token_num": 1000039515,
+            "token_ratio": "2.95%",
+            "sample_weight_rel": 1.0,
+            "sub_class": {
+                "Dolma-math": {
+                    "token_num": 1000039515,
+                    "token_ratio": "2.95%",
+                    "sample_weight_rel": 1.0,
+                    "sub_class": {
+                        "default": {
+                            "token_num": 1000039515,
+                            "token_ratio": "2.95%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.16666666666666666,
+                            "require_token_num": 500010953.8333333,
+                            "sample_keep_rate": 0.49999119668119646
+                        }
+                    },
+                    "sample_target_ratio": 0.16666666666666666,
+                    "require_token_num": 500010953.8333333,
+                    "sample_keep_rate": 0.49999119668119646
+                }
+            },
+            "sample_target_ratio": 0.16666666666666666,
+            "require_token_num": 500010953.8333333,
+            "sample_keep_rate": 0.49999119668119646
+        },
+        "novel": {
+            "token_num": 2150052470,
+            "token_ratio": "6.34%",
+            "sample_weight_rel": 1.0,
+            "sub_class": {
+                "MNBVC_novel": {
+                    "token_num": 2150052470,
+                    "token_ratio": "6.34%",
+                    "sample_weight_rel": 1.0,
+                    "sub_class": {
+                        "名著": {
+                            "token_num": 160720617,
+                            "token_ratio": "0.47%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.34567296769491707
+                        },
+                        "杂书3": {
+                            "token_num": 200016002,
+                            "token_ratio": "0.59%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.27776163953196176
+                        },
+                        "杂书4": {
+                            "token_num": 200011076,
+                            "token_ratio": "0.59%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.2777684804222949
+                        },
+                        "杂书5": {
+                            "token_num": 127986898,
+                            "token_ratio": "0.38%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.434081718647077
+                        },
+                        "杂书6": {
+                            "token_num": 200084414,
+                            "token_ratio": "0.59%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.27766666846997956
+                        },
+                        "知名网络小说": {
+                            "token_num": 26042937,
+                            "token_ratio": "0.08%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 2.133276006778657
+                        },
+                        "科幻小说": {
+                            "token_num": 35029761,
+                            "token_ratio": "0.1%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 1.5859877733150431
+                        },
+                        "网络小说2": {
+                            "token_num": 600090113,
+                            "token_ratio": "1.77%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.09258071653673144
+                        },
+                        "轻小说": {
+                            "token_num": 600070652,
+                            "token_ratio": "1.77%",
+                            "sample_weight_rel": 1.0,
+                            "sub_class": {},
+                            "sample_target_ratio": 0.018518518518518517,
+                            "require_token_num": 55556772.64814814,
+                            "sample_keep_rate": 0.09258371903871769
+                        }
+                    },
+                    "sample_target_ratio": 0.16666666666666666,
+                    "require_token_num": 500010953.8333333,
+                    "sample_keep_rate": 0.23255755885498613
+                }
+            },
+            "sample_target_ratio": 0.16666666666666666,
+            "require_token_num": 500010953.8333333,
+            "sample_keep_rate": 0.23255755885498613
+        }
+    },
+    "sample_target_ratio": 1.0,
+    "require_token_num": 3000065723
+}

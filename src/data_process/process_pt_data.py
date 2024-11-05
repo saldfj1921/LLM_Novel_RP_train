@@ -24,16 +24,17 @@ def is_novel_line_filter(line):
     if url_pattern.search(line):
         return True
 
-PT_DATASET_DIR = '../../data/raw_dataset/pretrain/'
-OUTPUT_DIR = '../../data/processed_data/pretrain/'
+PT_DATASET_DIR = '../../data/pt_raw_data/'
+OUTPUT_DIR = '../../data/pt_processed_data/'
 
 class DataCollector:
-    def __init__(self, dataset_name, maxsize_d, drop_ratio=0, content_keys=[], type_key=None):
+    def __init__(self, dataset_name, maxsize_d, drop_ratio=0, content_keys=[], type_key=None, head_tag='g'):
         self.dataset_name = dataset_name
         # hyper-parameters
         self.MaxSizeOneFile = 10 * BaseN
         self.MinSizeOneFile = 1000000
         self.drop_ratio = drop_ratio
+        self.head_tag = head_tag
         # set dataset info
         self.content_keys = content_keys
         self.type_key = type_key
@@ -89,9 +90,10 @@ class DataCollector:
             return
         print('dump', dtype, 'size', self.size_d[dtype], 'ins num', len(self.data_buff_d[dtype]), 'rest', self.ins_cnt_d)
         self.file_split_id += 1
-        o_fpath = OUTPUT_DIR+self.dataset_name+'_'+str(self.file_split_id)+'_'+dtype+'.json'
-        with open(o_fpath, 'w', encoding='utf-8') as file:
-            json.dump(self.data_buff_d[dtype], file, ensure_ascii=False)
+        o_fname = self.head_tag+'@'+self.dataset_name+'@'+dtype+'@'+'_'+str(self.file_split_id)+'.json'
+        with open(OUTPUT_DIR+o_fname, 'w', encoding='utf-8') as file:
+            #json.dump(self.data_buff_d[dtype], file, ensure_ascii=False)
+            json.dump(self.data_buff_d[dtype], file, ensure_ascii=False, indent=4)
         self.data_buff_d[dtype] = []
         self.ins_cnt_d[dtype] -= self.size_d[dtype]
         self.size_d[dtype] = 0
@@ -124,14 +126,23 @@ class DataCollector:
         
 
 
-def process(dataset_name, format, maxsize_d, content_keys = [], type_key=None, drop_ratio=0.0):
+def process(dataset_name, format, maxsize_d, content_keys = [], type_key=None, drop_ratio=0.0, head_tag='g'):
+    """
+    dataset_name: dataset name, must be the same with filename
+    format: support jsonl, parquet, txt
+    maxsize_d: max total token num for each sub_class
+    content_key: the name of the col name contain main context
+    type_key:  the name of the col contain type (if sub_class exist)
+    drop_ratio: random dropout
+    head_tag: first class name
+    """
     # setting for different format
     if format == TXT_FORMAT:
         content_keys = [DEFAULT_CONTENT_KEY]
     else:
         assert len(content_keys) > 0
     # init data collector
-    dc = DataCollector(dataset_name, maxsize_d, drop_ratio=drop_ratio, content_keys=content_keys, type_key=type_key)
+    dc = DataCollector(dataset_name, maxsize_d, drop_ratio=drop_ratio, content_keys=content_keys, type_key=type_key, head_tag=head_tag)
     dataset_path = os.path.join(PT_DATASET_DIR, dataset_name)
 
     print('process', dataset_name, '...')
@@ -143,20 +154,20 @@ def process(dataset_name, format, maxsize_d, content_keys = [], type_key=None, d
         if dc.is_file_finish(): continue
 
         print('process file', file_path)
-        if format == 'jsonl':
+        if format == JSONL_FORMAT:
             with open(file_path, 'r', encoding='utf-8') as file:
                 for line in file:
                     content_d = json.loads(line)
                     dc.add(content_d)
                     if dc.is_file_finish(): break
-        if format == 'parquet':
+        if format == PARQUET_FORMAT:
             df = pd.read_parquet(file_path)
             print("Columns:", df.columns.tolist())
             for index, row in df.iterrows():
                 content_d = row.to_dict()
                 dc.add(content_d)
                 if dc.is_file_finish(): break
-        if format == 'txt':   
+        if format == TXT_FORMAT:   
             try_encodings = ['utf-8', 'gbk', 'gb2312', 'gb18030']
             for encoding in try_encodings:
                 try:
@@ -169,7 +180,14 @@ def process(dataset_name, format, maxsize_d, content_keys = [], type_key=None, d
                             if not is_novel_line_filter(line):
                                 lines.append(line)
                         lines = [line.strip() for line in lines if line.strip() != ""]
-                        text = "\n".join(lines)
+                        # chunk
+                        NovelChunkSize = 100*1000
+                        text = ''
+                        for line in lines:
+                            text += line + '\n'
+                            if len(text) > NovelChunkSize:
+                                dc.add({DEFAULT_CONTENT_KEY: text})
+                                text = ''
                         dc.add({DEFAULT_CONTENT_KEY: text})
                         break
                 except:
@@ -180,7 +198,7 @@ def process(dataset_name, format, maxsize_d, content_keys = [], type_key=None, d
 #  ============ CN General ===================
 def process_Skypile():
     maxsize_d = {DEFAULT_TYPE_KEY: 100*BaseN}
-    process('Skypile', JSONL_FORMAT, maxsize_d, content_keys = ['text'])
+    process('Skypile', JSONL_FORMAT, maxsize_d, content_keys = ['text'], head_tag='CN_general')
 
 def process_Tiger():
     #Tiger有分类
@@ -196,24 +214,24 @@ def process_Tiger():
         'en-github': 5*BaseN,
         'en-stackoverflow': 5*BaseN
     }
-    process('Tiger', PARQUET_FORMAT, maxsize_d, content_keys = ['title', 'content'], type_key = 'dataType')
+    process('Tiger', PARQUET_FORMAT, maxsize_d, content_keys = ['title', 'content'], type_key = 'dataType', head_tag='CN_general')
 
 #  ============ ENG General ===================
 def process_WanJuan2():
     maxsize_d = {DEFAULT_TYPE_KEY: 500*BaseN}
-    process('WanJuan2', JSONL_FORMAT, maxsize_d, content_keys = ['content'])
+    process('WanJuan2', JSONL_FORMAT, maxsize_d, content_keys = ['content'], head_tag='ENG_general')
 
 #  ============ Code ===================
 def process_starcode():
     maxsize_d = {'cpp': 120*BaseN,
                 'java': 120*BaseN,
                 'python': 120*BaseN,}
-    process('startcoder', PARQUET_FORMAT, maxsize_d, content_keys = ['content'], type_key = FILENAME_TYPE_KEY)
+    process('startcoder', PARQUET_FORMAT, maxsize_d, content_keys = ['content'], type_key = FILENAME_TYPE_KEY, head_tag='code')
 
 #  ============ Math ===================
 def process_Dolma_math():
     maxsize_d = {DEFAULT_TYPE_KEY: 400*BaseN}
-    process('Dolma-math', JSONL_FORMAT, maxsize_d, content_keys = ['text'], drop_ratio=0.5)
+    process('Dolma-math', JSONL_FORMAT, maxsize_d, content_keys = ['text'], drop_ratio=0.5, head_tag='math')
 
 #  ============ CN spec ===================
 def process_MNBVC_novel():
@@ -227,13 +245,13 @@ def process_MNBVC_novel():
                 '科幻小说': 20*BaseN,
                 '网络小说2': 30*BaseN, 
                 '轻小说': 30*BaseN}
-    process('MNBVC_novel', TXT_FORMAT, maxsize_d, type_key = FILENAME_TYPE_KEY)
+    process('MNBVC_novel', TXT_FORMAT, maxsize_d, type_key = FILENAME_TYPE_KEY, head_tag='novel')
 
 
 #  ============ GN ===================
 def process_My_novel():
     maxsize_d = {DEFAULT_TYPE_KEY:  50*BaseN}
-    process('My_novel', TXT_FORMAT, maxsize_d)
+    process('My_novel', TXT_FORMAT, maxsize_d, head_tag='My')
 
 #process_Skypile()
 #process_Tiger()
