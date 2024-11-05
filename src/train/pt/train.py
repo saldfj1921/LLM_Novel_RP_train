@@ -1,3 +1,4 @@
+import glob
 from datasets import Dataset
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForCausalLM, DataCollatorForSeq2Seq, TrainingArguments, HfArgumentParser, Trainer
@@ -9,11 +10,49 @@ from dataclasses import dataclass, field
 import deepspeed
 deepspeed.ops.op_builder.CPUAdamBuilder().load()
 from torch.utils.tensorboard import SummaryWriter
+from config import *
 
 # 确保环境变量中没有 WandB 的设置
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["WANDB_MODE"] = "dryrun"
     
+
+# 调整数据集格式并添加 channel 信息
+def preprocess_data(dataset):
+    MAX_LENGTH = 2048
+
+    def instance_process_func(examples):
+        tokenized_examples = tokenizer(examples['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH)['input_ids']
+        tokenized_examples = [ids[:MAX_LENGTH] for ids in tokenized_examples]  # 做一个截断
+        channels = [example['channel'] for example in examples]
+        return {'input_ids': tokenized_examples, 'labels': tokenized_examples, 'channels': channels}
+
+    dataset = dataset.map(instance_process_func, batched=True, num_proc=4, remove_columns=['text'])
+    return dataset
+
+# 加载数据，并分channel
+def load(data_dir):
+    dataset_list = []
+    file_paths = glob.glob(os.path.join(data_dir, '**', '*.'+format), recursive=True)
+    for path in file_paths:
+        single_dataset = load_dataset('json', data_files=path)
+        single_pc_dataset = preprocess_data(single_dataset['train'])
+        dataset_list.append([single_pc_dataset])
+
+    # 合并数据集
+    train_ds = concatenate_datasets(dataset_list)
+    return train_ds
+
+class DataCollatorWithChannel:
+    def __init__(self, tokenizer, mlm=False, mlm_probability=0.15):
+        self.data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=mlm, mlm_probability=mlm_probability)
+
+    def __call__(self, features):
+        channels = [feature.pop('channels') for feature in features]
+        batch = self.data_collator(features)
+        batch['channels'] = torch.tensor([channels])
+        return batch
+
 # 自定义 Trainer 类以覆盖 compute_loss 方法
 class CustomTrainer(Trainer):
     def __init__(self, *args, writer=None, deepspeed_config=None, **kwargs):
@@ -64,36 +103,13 @@ class CustomTrainer(Trainer):
         )
         return model_engine
 
-class DataCollatorWithChannel:
-    def __init__(self, tokenizer, mlm=False, mlm_probability=0.15):
-        self.data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=mlm, mlm_probability=mlm_probability)
-
-    def __call__(self, features):
-        channels = [feature.pop('channels') for feature in features]
-        batch = self.data_collator(features)
-        batch['channels'] = torch.tensor([channels])
-        return batch
-
-# 调整数据集格式并添加 channel 信息
-def preprocess_data(dataset, channel_label):
-    MAX_LENGTH = 2048
-
-    def instance_process_func(examples):
-        tokenized_examples = tokenizer(examples['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH)['input_ids']
-        tokenized_examples = [ids[:MAX_LENGTH] for ids in tokenized_examples]  # 做一个截断
-        channels = [channel_label] * len(tokenized_examples)
-        return {'input_ids': tokenized_examples, 'labels': tokenized_examples, 'channels': channels}
-
-    dataset = dataset.map(instance_process_func, batched=True, num_proc=4, remove_columns=['text'])
-    return dataset
-
 if "__main__" == __name__:
-    model_path = "/data/jeriffli/LLM_weight/Qwen1.5-7B"
+    model_path = MODEL_PATH
 
     # 使用DeepSpeed插件创建TrainingArguments
     training_args = TrainingArguments(
-        output_dir="./results",
-        logging_dir="./logs",
+        output_dir=OUTPUT_PATH,
+        logging_dir=LOG_PATH,
         logging_steps=10,
         num_train_epochs=3,
         per_device_train_batch_size=1,
@@ -103,21 +119,14 @@ if "__main__" == __name__:
         bf16=True,
         remove_unused_columns=False,
         report_to=None,  # 禁用 W&B
-        deepspeed="./ds_config.json"
+        deepspeed=DS_CONFIG_PATH
     )
 
     # 加载tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
     # 加载不同channel的数据
-    channel_A_data = load_dataset('json', data_files='test_data/_1.json')
-    channel_B_data = load_dataset('json', data_files='test_data/_2.json')
-
-    train_dataset_A = preprocess_data(channel_A_data['train'], 0)
-    train_dataset_B = preprocess_data(channel_B_data['train'], 1)
-
-    # 合并数据集
-    train_ds = concatenate_datasets([train_dataset_A, train_dataset_B])
+    train_ds = load(DATA_DIR)
 
     # 创建模型并以半精度形式加载
     model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.half, device_map={"": int(os.environ.get("LOCAL_RANK") or 0)})
@@ -129,7 +138,7 @@ if "__main__" == __name__:
     )
 
     # 使用TensorBoard
-    writer = SummaryWriter(log_dir='./logs')
+    writer = SummaryWriter(log_dir=LOG_PATH)
     # 使用trainer训练
     trainer = CustomTrainer(
         model=model,
@@ -143,5 +152,5 @@ if "__main__" == __name__:
     writer.close()
 
     # 保存训练后的模型和tokenizer
-    trainer.save_model(output_dir='./trained_llama')
-    tokenizer.save_pretrained('./trained_llama')
+    trainer.save_model(output_dir=MODEL_OUTPUT_PATH)
+    tokenizer.save_pretrained(MODEL_OUTPUT_PATH)

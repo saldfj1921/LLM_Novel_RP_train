@@ -1,0 +1,6 @@
+MODEL_PATH = "/data/jeriffli/LLM_weight/Qwen1.5-7B"
+LOG_PATH = "./logs"
+OUTPUT_PATH = "./results"
+MODEL_OUTPUT_PATH = "./results/final_model"
+DS_CONFIG_PATH = "./ds_config.json"
+DATA_DIR = "../../data/pt_processed_data"

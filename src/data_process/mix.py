@@ -141,7 +141,7 @@ class DataCollector:
         if len(self.buf) > self.buff_size:
             self.dump()  
 
-def mix_dataset(processed_data_dir, sample_config_path, output_dir, total_require_token_mul=1.0):
+def mix_dataset(processed_data_dir, sample_config_path, channel_info_path, output_dir, total_require_token_mul=1.0):
     channel_d = {}
     channel_cnt = 0
     with open(sample_config_path, 'r', encoding='utf-8') as f:
@@ -175,6 +175,9 @@ def mix_dataset(processed_data_dir, sample_config_path, output_dir, total_requir
                             instance['channel'] = channel_id
                             dc.add(instance)            
         dc.dump(dump_all=True)
+        
+        with open(channel_info_path, 'w', encoding='utf-8') as file:
+            json.dump(channel_d, file, indent=4, ensure_ascii=False)
 
 
 
@@ -182,10 +185,11 @@ if __name__ == "__main__":
     processed_data_dir = "../../data/pt_processed_data/"
     data_stat_path = "./data_stat.json"
     sample_config_path = "./sample_config.json"
+    channel_info_path = "./channel_info.json"
     output_dir = "../../data/pt_train_data/"
 
     #calc_data_stat(processed_data_dir, data_stat_path)
 
     calc_sample_config(data_stat_path, sample_config_path, total_require_token_num=3000065723)
 
-    mix_dataset(processed_data_dir, sample_config_path, output_dir)
+    mix_dataset(processed_data_dir, sample_config_path, channel_info_path, output_dir)
