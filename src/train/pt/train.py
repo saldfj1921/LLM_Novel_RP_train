@@ -18,26 +18,25 @@ os.environ["WANDB_MODE"] = "dryrun"
     
 
 # 调整数据集格式并添加 channel 信息
-def preprocess_data(dataset):
+def instance_process_func(examples):
     MAX_LENGTH = 2048
-
-    def instance_process_func(examples):
-        tokenized_examples = tokenizer(examples['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH)['input_ids']
-        tokenized_examples = [ids[:MAX_LENGTH] for ids in tokenized_examples]  # 做一个截断
-        channels = [example['channel'] for example in examples]
-        return {'input_ids': tokenized_examples, 'labels': tokenized_examples, 'channels': channels}
-
-    dataset = dataset.map(instance_process_func, batched=True, num_proc=4, remove_columns=['text'])
+    tokenized_examples = tokenizer(examples['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH)['input_ids']
+    tokenized_examples = [ids[:MAX_LENGTH] for ids in tokenized_examples]  # 做一个截断
+    channels = examples['channel']
+    return {'input_ids': tokenized_examples, 'labels': tokenized_examples, 'channels': channels}
+    
+def preprocess_data(dataset):
+    dataset = dataset.map(instance_process_func, batched=True, num_proc=4, remove_columns=['text', 'channel_name'])
     return dataset
 
 # 加载数据，并分channel
 def load(data_dir):
     dataset_list = []
-    file_paths = glob.glob(os.path.join(data_dir, '**', '*.'+format), recursive=True)
+    file_paths = glob.glob(os.path.join(data_dir, '*.json'), recursive=True)
     for path in file_paths:
         single_dataset = load_dataset('json', data_files=path)
         single_pc_dataset = preprocess_data(single_dataset['train'])
-        dataset_list.append([single_pc_dataset])
+        dataset_list.append(single_pc_dataset)
 
     # 合并数据集
     train_ds = concatenate_datasets(dataset_list)
@@ -62,12 +61,12 @@ class CustomTrainer(Trainer):
         self.deepspeed_config = deepspeed_config
     
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        #print(inputs)
+        channels = inputs.pop('channels')
         # Overwrite compute_loss method to log to TensorBoard
         outputs = model(**inputs)
         logits = outputs.logits
         labels = inputs['labels']
-        #channels = inputs['channels'][:, 0]
-        channels = inputs['channels']
 
         # Flatten logits and labels for calculating per-instance loss
         shift_logits = logits[..., :-1, :].contiguous().view(-1, logits.size(-1))
@@ -108,17 +107,19 @@ if "__main__" == __name__:
 
     # 使用DeepSpeed插件创建TrainingArguments
     training_args = TrainingArguments(
+        report_to=None,  # 禁用 W&B
+        remove_unused_columns=False,
         output_dir=OUTPUT_PATH,
         logging_dir=LOG_PATH,
         logging_steps=10,
-        num_train_epochs=3,
+        save_steps=500,
+        save_total_limit=1,
+        bf16=True,
+        num_train_epochs=1,
         per_device_train_batch_size=1,
         gradient_accumulation_steps=8,  # 新增
         learning_rate=5e-05,
         weight_decay=0.01,
-        bf16=True,
-        remove_unused_columns=False,
-        report_to=None,  # 禁用 W&B
         deepspeed=DS_CONFIG_PATH
     )
 
