@@ -1,1 +1,7 @@
 chardet
+transformers
+deepspeed
+peft
+datasets
+pandas
+flash-attn

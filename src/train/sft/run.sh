@@ -1,1 +1,1 @@
-deepspeed --include localhost:0,1 train.py
+deepspeed --include localhost:0 train.py

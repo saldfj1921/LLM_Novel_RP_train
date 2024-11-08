@@ -23,6 +23,7 @@ def instance_process_func(examples):
     tokenized_examples = tokenizer(examples['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH)['input_ids']
     tokenized_examples = [ids[:MAX_LENGTH] for ids in tokenized_examples]  # 做一个截断
     channels = examples['channel']
+    print(len(tokenized_examples['input_ids']), len(channels))
     return {'input_ids': tokenized_examples, 'labels': tokenized_examples, 'channels': channels}
     
 def preprocess_data(dataset):
@@ -43,13 +44,13 @@ def load(data_dir):
     return train_ds
 
 class DataCollatorWithChannel:
-    def __init__(self, tokenizer, mlm=False, mlm_probability=0.15):
-        self.data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=mlm, mlm_probability=mlm_probability)
+    def __init__(self, tokenizer):
+        self.data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)    # GPT do not use MLM
 
     def __call__(self, features):
         channels = [feature.pop('channels') for feature in features]
         batch = self.data_collator(features)
-        batch['channels'] = torch.tensor([channels])
+        batch['channels'] = torch.tensor(channels)
         return batch
 
 # 自定义 Trainer 类以覆盖 compute_loss 方法
@@ -91,7 +92,10 @@ class CustomTrainer(Trainer):
             self.writer.add_scalar(f'Loss/Channel_{channel}', avg_loss, self.global_step)
 
         self.global_step += 1
-        return (outputs.loss, outputs) if return_outputs else outputs.loss
+
+        # 缩放损失以适应梯度累积步骤
+        loss = outputs.loss / self.args.gradient_accumulation_steps
+        return (loss, outputs) if return_outputs else loss
     
     def deepspeed_init(self, model):
         # 使用deepspeed初始化模型
@@ -115,6 +119,7 @@ if "__main__" == __name__:
         save_steps=500,
         save_total_limit=1,
         bf16=True,
+        gradient_checkpointing=True,
         num_train_epochs=1,
         per_device_train_batch_size=1,
         gradient_accumulation_steps=8,  # 新增
@@ -131,7 +136,8 @@ if "__main__" == __name__:
 
     # 创建模型并以半精度形式加载
     model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.half, device_map={"": int(os.environ.get("LOCAL_RANK") or 0)})
-    
+    model.enable_input_require_grads() # 开启梯度检查点时，要执行该方法
+
     # 数据collator，用于动态padding
     data_collator = DataCollatorWithChannel(
         tokenizer=tokenizer,

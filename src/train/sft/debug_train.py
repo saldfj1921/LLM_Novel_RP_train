@@ -9,8 +9,6 @@ from datasets import load_dataset, concatenate_datasets
 import os
 import torch
 from dataclasses import dataclass, field
-import deepspeed
-deepspeed.ops.op_builder.CPUAdamBuilder().load()
 from torch.utils.tensorboard import SummaryWriter
 from config import *
 
@@ -91,7 +89,6 @@ def load(data_dir):
 class DataCollatorWithChannel:
     def __init__(self, tokenizer, mlm=False, mlm_probability=0.15):
         self.data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, padding=True)
-        #self.data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=mlm, mlm_probability=mlm_probability)
 
     def __call__(self, features):
         channels = [feature.pop('channels') for feature in features]
@@ -101,11 +98,10 @@ class DataCollatorWithChannel:
 
 # 自定义 Trainer 类以覆盖 compute_loss 方法
 class CustomTrainer(Trainer):
-    def __init__(self, *args, writer=None, deepspeed_config=None, **kwargs):
+    def __init__(self, *args, writer=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.writer = writer
         self.global_step = 0
-        self.deepspeed_config = deepspeed_config
     
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         #print(inputs)
@@ -138,19 +134,7 @@ class CustomTrainer(Trainer):
             self.writer.add_scalar(f'Loss/Channel_{channel}', avg_loss, self.global_step)
 
         self.global_step += 1
-
-        # 缩放损失以适应梯度累积步骤
-        loss = outputs.loss / self.args.gradient_accumulation_steps
-        return (loss, outputs) if return_outputs else loss
-    
-    def deepspeed_init(self, model):
-        # 使用deepspeed初始化模型
-        model_engine, optimizer, _, _ = deepspeed.initialize(
-            model=model,
-            model_parameters=model.parameters(),
-            config=self.deepspeed_config
-        )
-        return model_engine
+        return (outputs.loss, outputs) if return_outputs else outputs.loss
                         
 if "__main__" == __name__:
     # # ===== debug process_func =====
@@ -168,10 +152,9 @@ if "__main__" == __name__:
 
     #  ===== train =====
     model_path = MODEL_PATH
+    DATA_DIR = "/mnt/data/jeriffli/farlight84llm/dataset/mydebug"
     USE_LORE = True
 
-    # 使用DeepSpeed插件创建TrainingArguments
-      # 使用DeepSpeed插件创建TrainingArguments
     training_args = TrainingArguments(
         report_to=None,  # 禁用 W&B
         remove_unused_columns=False,
@@ -181,13 +164,12 @@ if "__main__" == __name__:
         save_steps=500,
         save_total_limit=1,
         bf16=True,
+        num_train_epochs=100,
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=8,  # 新增
         gradient_checkpointing=True,
-        num_train_epochs=1,
-        per_device_train_batch_size=1,
-        gradient_accumulation_steps=4,  # 新增
         learning_rate=5e-05,
-        weight_decay=0.01,
-        deepspeed=DS_CONFIG_PATH
+        weight_decay=0.01
     )
 
     # 加载tokenizer
